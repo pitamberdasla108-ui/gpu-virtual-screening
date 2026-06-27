@@ -1,0 +1,6 @@
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y git make g++ libboost-all-dev ocl-icd-opencl-dev opencl-headers && rm -rf /var/lib/apt/lists/*
+RUN git clone https://github.com/DeltaGroupNJUPT/Vina-GPU-2.1.git /opt/vg
+WORKDIR /opt/vg/AutoDock-Vina-GPU-2.1
+CMD ["bash"]

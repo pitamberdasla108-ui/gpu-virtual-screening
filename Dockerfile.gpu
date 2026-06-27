@@ -1,0 +1,9 @@
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+RUN apt-get update && apt-get install -y git make build-essential && rm -rf /var/lib/apt/lists/*
+RUN git clone https://github.com/ccsb-scripps/AutoDock-GPU.git /opt/adgpu
+WORKDIR /opt/adgpu
+ENV GPU_INCLUDE_PATH=/usr/local/cuda/include
+ENV GPU_LIBRARY_PATH=/usr/local/cuda/lib64
+RUN make DEVICE=CUDA NUMWI=128
+ENV PATH="/opt/adgpu/bin:${PATH}"
+CMD ["bash"]

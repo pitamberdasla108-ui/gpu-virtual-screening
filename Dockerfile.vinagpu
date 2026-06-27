@@ -1,0 +1,21 @@
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y \
+    git make gcc g++ libboost-all-dev ocl-icd-opencl-dev opencl-headers \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /etc/OpenCL/vendors && echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
+RUN git clone https://github.com/DeltaGroupNJUPT/Vina-GPU-2.1.git /opt/vg
+WORKDIR /opt/vg/AutoDock-Vina-GPU-2.1
+# 1) point WORK_DIR at the real location (fixes wrapcl.h include path)
+RUN sed -i 's|^WORK_DIR=.*|WORK_DIR=/opt/vg/AutoDock-Vina-GPU-2.1|' Makefile
+# 2) use system boost headers/libs instead of source-built boost
+RUN sed -i 's|^BOOST_LIB_PATH=.*|BOOST_LIB_PATH=/usr|' Makefile
+RUN sed -i 's|^BOOST_INC_PATH=.*|BOOST_INC_PATH=-I/usr/include|' Makefile
+RUN sed -i 's|^LIB_PATH=.*|LIB_PATH=-L/usr/lib/x86_64-linux-gnu -L$(OPENCL_LIB_PATH)/lib64|' Makefile
+# 3) drop the from-source boost thread .cpp files (system boost provides them)
+RUN sed -i 's|\$(BOOST_LIB_PATH)/libs/thread/src/pthread/thread.cpp||' Makefile
+RUN sed -i 's|\$(BOOST_LIB_PATH)/libs/thread/src/pthread/once.cpp||' Makefile
+# 4) link boost_thread since we no longer compile it from source
+RUN sed -i 's|^LIB1=.*|LIB1=-lboost_program_options -lboost_system -lboost_filesystem -lboost_thread -lOpenCL|' Makefile
+RUN make source 2>&1 | tail -25
+CMD ["bash"]
